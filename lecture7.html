@@ -1,0 +1,514 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>POL40300: Lecture 7</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/white.css">
+		<link rel="stylesheet" href="dist/reveal-override.css"/>
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css">
+		
+	</head>
+	<body>
+		<header><img src="pic/LogoMainBlue2.png" style="width:100% "></header>
+		<div class="reveal">
+			<div class="slides">
+				<section data-background="pic/BGMainBlue.gif" style="color:white">
+					<h1  style="color:white">POL40300: Computational Methods</h1>
+					<p>Lecture 7 by Nikolai Gad</p>
+					<p>München, 23. November 2021</p>
+				</section>
+				<section>
+					<h3 style="color: rgb(0,101,189)">Today's lecture </h3>
+					<ul>
+						<li>Practicals </li>
+						<li>Collecting data for computational text analysis </li>
+						<li>Loading text data into R </li>
+						<li>Dictionary analysis w Quanteda </li>
+						<li>(Sparsity/density of document-feature-matrices) </li>
+					</ul>
+				</section>
+				
+
+
+
+
+				<section>
+					<h3 style="color: rgb(0,101,189)">Collecting data for computational text analysis</h3>
+					<section>
+						<p style="font-size: 1.5em">Benoit, Kenneth, Thomas Bräuninger, and Marc Debus. 2009. ‘Challenges for Estimating Policy Preferences: Announcing an Open Access Archive of Political Documents’. <span style="font-style: italic;">German Politics.</span></p>
+						<p class="fragment">Describes two challenges with data for computational text analysis: </p>
+						<ol>
+							<li class="fragment">Selecting texts (sampling data) </li>
+							<li class="fragment">Quality of source data </li>
+						</ol>
+					</section>
+					<section>
+						<h2>Three examples to illustrate the importance of data selection and quality </h2>
+						<p class="fragment">All the examples apply the Wordscores scaling technique: </p>
+						<ul>
+							<li class="fragment">A supervised (machine learning) model to estimate positions of texts on dimensions, identified a priori. </li>
+							<li class="fragment">Requires well known reference scores for a training set of texts. </li>
+							<li class="fragment">Once the model has been "trained" on these texts, it can be used to estimate positions on remaining texts. </li>
+							<li class="fragment">Developed to estimate policy positions of political actors. </li>
+							<li class="fragment">Used a lot in political science, but it also works for other purposes. </li>
+						</ul>
+					</section>
+					<section>
+						<h2>Example 1) Misclassified German elections manifestos </h2>
+						<ul>
+							<li class="fragment">CDU's election manifesto for the 1965 federal election was titled "Düsseldorf Declaration of the CDU"</li>
+							<li class="fragment">However, the CMP dataset also included comments made by a number of party officials that was published with the declaration. </li>
+							<li class="fragment">The declaration itself was only 599 words long, but including the comments it was 16.011 words long. </li>
+							<li class="fragment">So should the comments be included or not in the analysis? And does it make any difference? </li>
+						</ul>
+						<img src="pic/lecture7/Fig1.svg" class="fragment" />
+					</section>
+					<section>
+						<h2>Example 2) Eastern and Western German Green Parties the same? </h2>
+						<ul>
+							<li class="fragment">Using election manifestos from the 1990 and 2002 federal elections as reference (ie training) texts. </li>
+							<li class="fragment">And scored them with data from Laver & Hunt's 1989 expert survey about party positions. </li>
+							<li class="fragment">However, Eastern and Western German Green parties ran separately in the 1990 election with individual manifestos. </li>
+							<li class="fragment">So which manifesto should be used for reference? And does it make a difference? </li>
+						</ul>
+						<img src="pic/lecture7/Fig2.svg" class="fragment" />
+					</section>
+					<section>
+						<h2>Example 3) The effect of "junk text" in election manifestos. </h2>
+						<ul>
+							<li class="fragment">Data taken from the Comparative Manifesto Project. </li>
+							<li class="fragment">...which had altered the manifestos for the purpose of human coding (line numbers, duplicates of sections that needed to be coded several times etc.) </li>
+						</ul>
+						<img src="pic/lecture7/Fig3.svg" class="fragment" />
+						<ul>
+							<li class="fragment">Generally no drastic changes, except from FDP and PDS. </li>
+							<li class="fragment">However, this can still have crucial implications for analysis, exemplified by De Swan's theory of minimal ideological range coalitions. (CDU/SPD coalition expected vs. CDU/FDP coalition). </li>
+						</ul>
+					</section>
+					<section>
+						<h2>Three things to consider when collecting text data for computational analysis: </h2>
+						<ul>
+							<li class="fragment">Texts must contain sincere information about what we want to extract/measure. </li>
+							<li class="fragment">Comparability of texts. </li>
+							<li class="fragment">Possible errors in texts: misspellings, missing pages, failed scans. </li>
+						</ul>
+						<p class="fragment">Aplies to all kinds of text analysis, but can be particularly tricky when analysing large quantities of texts computationally. </p>
+						<p class="fragment">This also illustrates the importance of human readings of documents in addition to computational methods. </p>
+						<p class="fragment">Suggested solution in paper: A database of high quality text data with standardised formatting, suitable for computational analysis - polidoc.net</p>
+					</section>
+				</section>
+				
+				
+				
+				
+				
+				<section>
+					<h3 style="color: rgb(0,101,189)">Data storage formats </h3>
+					<section>
+						<p class="fragment">So far we have mainly used data that was stored in a csv-file: </p>
+						<pre><code class ="r hljs fragment" data-trim>
+> df <- read.csv("PoliticalAds.csv")
+						</code></pre>
+						<p class="fragment">And last week you saw how to load an R object stored in a .RDS file: </p>
+						<pre><code class ="r hljs fragment" data-trim>
+> corp <- readRDS("data_corpus_sampletweets.rds")
+						</code></pre>
+						<p class="fragment">However, often the text data we are interested in, is not stored in either of these formats. </p>
+						<h3 class="fragment">The readtext package for R! </h3>
+					</section>
+					<section>
+						<h2>The readtext package </h2>
+						<ul>
+							<li>Can load text data from many different formats. </li>
+							<li>Creates dataframes that are compatible with Quanteda (text is stored in a column named "text")</li>
+							<li>Can handle different encodings. </li>
+						</ul>
+						<p class="fragment">Csv files can also be loaded with the readtext package: </p>
+						<pre><code class ="r hljs fragment" data-trim data-noescape>
+> df <- readtext("csv/inaugCorpus.csv", text_field = "texts")
+<span class="fragment">> df <- readtext("tsv/dailsample.tsv", text_field = "speech")</span>
+						</code></pre>
+					</section>
+					<section>
+						<h2>Reading text data from multiple text files </h2>
+						<p class="fragment">We can use glob characters to define all or several txt files to be loaded at once: </p>
+						<pre><code class ="r hljs fragment" data-trim data-noescape>
+> df <- readtext("txt/EU_manifestos/*.txt")
+<span class="fragment">> df <- readtext("txt/UDHR/*", encoding = "utf-8")</span>
+						</code></pre>
+						<p class="fragment">These text files are now stored in a dataframe with all the texts stored in a column named "text" and the filenames stored in a column named "doc_id". </p>
+						<p class="fragment">However, no docvars are included. We can take information from the filenames and automatically store that as docvars: </p>
+						<pre><code class ="r hljs fragment" data-trim data-noescape>
+> df <- readtext("txt/EU_manifestos/*.txt",
++                    docvarsfrom = "filenames", 
++                    docvarnames = c("unit", "context", "year", "language", "party"),
++                    dvsep = "_", 
++                    encoding = "ISO-8859-1")
+						</pre></code>
+					</section>
+					<section>
+						<h2>JSON data (JavaScript Object Notation) </h2>
+						
+						<p class="fragment">An open standard file format for storing data in a text file. </p>
+						<p class="fragment">Derived from JavaScript to store data objects created in JavaScript (similar to how we can store R objects in an .RDS file)</p>
+						<p class="fragment">JSON stores data in value-attribute pairs and vectors (called arrays in JSON/JavaScript, but they are the same). </p>
+						<p class="fragment">An example: </p>
+						<pre><code class ="json hljs fragment" data-trim>
+{
+ "created_at": "Wed Oct 10 20:19:24 +0000 2018",
+ "id": 1050118621198921728,
+ "id_str": "1050118621198921728",
+ "text": "To make room for more expression, we will now count all emojis as equal—including those with gender‍‍‍ ‍‍and skin t… https://t.co/MkGjXf9aXm",
+ "user": {},  
+ "entities": {}
+}						</code></pre>
+					</section>
+					<section>
+						<h2>Why do we need JSON? </h2>
+						<ul>
+							<li class="fragment">A lot of interesting data stored as JSON files. </li>
+							<li class="fragment">JSON files are relatively light-weight. </li>
+							<li class="fragment">Compared with other file formats JSON files are easy to parse. </li>
+							<li class="fragment">JSON files are human-readable. </li>
+						</ul> 
+					</section>
+					<section>
+						<h2>JSON data Syntax </h2>
+						<ul>
+							<li>Data is in name/value pairs</li>
+							<li>Data is separated by commas</li>
+							<li>Curly braces hold objects</li>
+							<li>Square brackets hold arrays (ie. vectors)</li>
+							<li>Data is hierachical</li>
+						</ul>
+						<p class="fragment">A simple example:</p>
+						<pre><code class ="json hljs fragment" data-trim>
+{"employees":[
+  { "firstName":"John", "lastName":"Doe" },
+  { "firstName":"Anna", "lastName":"Smith" },
+  { "firstName":"Peter", "lastName":"Jones" }
+]}
+						</code></pre>
+						<p class="fragment">Since JSON files are just plain text, you can open them in any text editor.</p>
+						<p class="fragment">However, opening a JSON file in your browser might give a better overview: </p>
+						<p class="fragment"><a href="inaugural_sample.json">Inaugural Speeches example </a>
+						<a href="twitter-example.json">Tweets example </a></p>
+					</section>
+					<section>
+						<h2>Loading text from a JSON file into R</h2>
+						<p class="fragment">The readtext package also makes it easy to load text from a JSON file: </p>
+						<pre><code class ="r hljs fragment" data-trim data-noescape>
+> df <- readtext("json/inaugural_sample.json", text_field = "texts")
+						</code></pre>
+						<p class="fragment">Again, we need to tell R where in the JSON file to find the texts we are interested in. </p>
+						<p class="fragment">Docvars are automatically imported like when we loaded the csv files. </p>
+						<p class="fragment">However, with complex JSON files it can be a bit tricky to predict how docvars are imported: </p>
+						<pre><code class ="r hljs fragment" data-trim data-noescape>
+> df <- readtext("twitter.json", text_field = "text")
+File doesn't contain a single valid JSON object.
+						</code></pre>
+						<p class="fragment">Luckily, readtext include options to automatically parse common text datasets, such as tweets: </p>
+						<pre><code class ="r hljs fragment" data-trim data-noescape>
+> df <- readtext("twitter.json", text_field = "text", source = "twitter")
+						</code></pre>
+					</section>
+					<section>
+						<h2>HTML and XML files </h2>
+						<p class="fragment">The readtext package can also load text from html or xml files. </p>
+						<p class="fragment">Html is a markup language that is used to describe a website so that your browser can render the website for you. We will look more into this file format when learning how to scrape a website for data. </p>
+						<p class="fragment">An XML file uses similar syntax to an html file, but is used to store data in a similar way as a JSON file: </p>
+						<pre><code class ="xml hljs fragment" data-trim>
+<employees>
+  <employee>
+    <firstName>John</firstName> <lastName>Doe</lastName>
+  </employee>
+  <employee>
+    <firstName>Anna</firstName> <lastName>Smith</lastName>
+  </employee>
+  <employee>
+    <firstName>Peter</firstName> <lastName>Jones</lastName>
+  </employee>
+</employees>
+						</code></pre>
+						<p class="fragment">XML files are harder to parse than a JSON file and while the readtext package works fine for simple xml files, it is not the best option to load xml data into R. </p>
+						
+					</section>
+					<section>
+						<h2>PDF files </h2>
+						<p class="fragment">Readtext can also be used to read and convert pdf files: </p>
+						<pre><code class ="r hljs fragment" data-trim>
+> df <- readtext("pdf/UDHR/*.pdf", 
++                    docvarsfrom = "filenames", 
++                    docvarnames = c("document", "language"),
++                    sep = "_")
+						</code></pre>
+						<p class="fragment">However, be aware that pdf files are often messy and the readtext package just loads all the text (inlcuding page numbers, headers etc.) from a pdf file. So it only works with relatively simple pdf files and often needs a bit extra cleaning up. </p>
+						<pre><code class ="r hljs fragment" data-trim>
+> df <- readtext("pdf/UK_natl_2005_en_PVP.pdf")
+> df[,2]
+[1] "     ⌧ Protest Vote Party\n                          Manifesto\n We believe that the public have the right to say:\n     “Sorry, but none of the candidates are\n      good enough to represent me.\n      You are not who I want.\n      I do not know enough about any of them\n      to give them the power to vote on laws\n      that crucially affect me and my family.”\nProtest Vote Party\n“It’s not that people can’t be bothered to vote.\n                      There’s just no one suitable to vote for.”\nGiving you the right to vote “None of the Above”      Above”\n                                       www.ProtestVoteParty.org\n\n              Two party state ..........................3\n              Our aim .....................................4\n              Our method................................5\n              Responsibility .............................6\n              An apolitical stance .....................6\n              Party objectives ..........................7\n  ... <truncated>
+> 
+						</code></pre>
+					</section>
+					<section>
+						<h2>Microsoft word files </h2>
+						<p class="fragment">Both .doc and .docx can be read by the readtext package. </p>
+						<p class="fragment">.docx documents work quite well: </p>
+						<pre><code class ="r hljs fragment" data-trim>
+> df <- readtext("word/*.docx")
+> df[1,2]
+[1] "The Eccentric Party\nElection Manifesto 2015\nPOLICIES:\u2028iPads, smartphones, X-boxes etc will come with a slot metre to reduce the amount of time kids are glued to these gadgets, once they've run out of money they can be chucked outside to get fitter playing sport, this will end childhood obesity.\u2028We're going to replace all sleeping policemen with members of the House of Lords\nObesity....All lip balm will be made with super glue.\nEducation - You will be required to read a book for every 10 selfies you take\nA GCSE in lying will be created.\nWe'll build new schools using revolutionary inflatable classrooms making it easier for delinquent pupils to let the entire school down, reducing class sizes to 3'x2'6\" and the abolition of student top-up fees; students should be entitled to full pints the same as everyone else.\nImmigration - We propose placing giant photos of \"celebrities\" such as Russell Brand, Katie Hopkins and Jeremy Clarkson at airports \"to discourage foreig... <truncated>
+						</code></pre>
+						<p class="fragment">.doc documents might need a bit of extra clean up: </p>
+						<pre><code class ="r hljs fragment" data-trim>
+> df <- readtext("word/*.doc")
+> df[1,2]
+[1] "[pic]\nRésumé du programme du PS pour les élections européennes\n\nPréambule : une autre Europe pour une autre mondialisation\n\nLes  socialistes  ont  toujours  été  des  partisans  de   la   construction\neuropéenne.\n\nD’abord parce que l’intégration européenne représente une garantie  pour  la\npaix  et  la  stabilité  démocratique.  Tel  était  le  souhait  des   pères\nfondateurs  de  l’Union  européenne.  Au  lendemain  de  la  seconde  guerre\nmondiale, ils ont jeté les bases d’une coopération pacifique  qui  a  permis\naux Etats de s’unir plutôt que de se diviser.\n\nEnsuite parce que l’intégration européenne a permis de grands  progrès  pour\nles citoyens européens. Avec  l’établissement  successif  de  la  Communauté\neuropéenne du Charbon et de l’Acier, de la Communauté économique  européenne\net puis l’Union européenne, le niveau et la qualité  de  vie  en  Europe  se\nsont globalement améliorés.\n\nEnfin, parce qu’à l’heure de la  mondialisation,  l’Europe  avec  son... <truncated>
+						</code></pre>
+					</section>
+					<section>
+						<h2>Text from archive files (.zip, .tar, .tar.gz, .tag.bz) </h2>
+					</section>
+				</section>
+				
+				
+				
+				
+				
+				
+				<section>
+					<h3 style="color: rgb(0,101,189)">Dictionary Analysis </h3>
+					<section>
+						<h2>Simple dictionary analysis (recap) </h2>
+						<ul>
+							<li class="fragment">Classify documents into known categories (sentiments/emotions/ideological stances/topics etc.) </li>
+							<li class="fragment">Dictionary consists of a list of words (or tokens) that corresponds to each category. </li>
+							<li class="fragment">In a dictionary we simply count the number of times words from dictionary is used in each document. </li>
+							<li class="fragment">If texts are of different lenghts we might want to normalise the scores though. </li>
+							<li class="fragment">And finally it is crucial that we validate our dictionary. </li>
+						</ul>
+					</section>
+					<section>
+						<h2>Your dictionaries </h2>
+					</section>
+					<section>
+						<h2>Use existing dictionaries</h2>
+						<ul>
+							<li class="fragment">Instead of creating our own dictionary, we can use exisiting dictionaries. </li>
+							<li class="fragment">Or use an existing dictionary as a starting point for creating our own. </li>
+							<li class="fragment">However be careful. Dictionaries are very contextual! </li>
+						</ul>
+					</section>
+					<section>
+						<h2>Popular "general" dictionaries: </h2>
+						<ul>
+							<li class="fragment">LIWC - The Linguistic Inquiry and Word Count Program. (Available for a fee: <a href="http://liwc.wpengine.com/">link</a>)</li>
+							<li class="fragment">Lexicoder Sentiment Dictionary (<a href="http://www.snsoroka.com/data-lexicoder/">link</a>)</li>
+							<li class="fragment">Vader Sentiment Dictionary (Open source and free to use: <a href="https://github.com/cjhutto/vaderSentiment ">link</a>)</li>
+							<li class="fragment">SentiStrength (Free for academic use: <a href="http://sentistrength.wlv.ac.uk/">link</a>)</li>
+							<li class="fragment">TensiStrength (Free for academic use: <a href="http://sentistrength.wlv.ac.uk/TensiStrength.html">link</a>)</li>
+							<li class="fragment">Wordstat: Not a dictionary, but list a lot of dictionaries on their website. (<a href="https://provalisresearch.com/products/content-analysis-software/wordstat-dictionary/">link</a>)</li>
+							<li class="fragment">Dictionaries from published research. (Many available from the <a href="https://dataverse.harvard.edu/">Havard Dataverse</a>)</li>
+						</ul>
+					</section>
+					<section>
+						<h2>Exisiting dictionaries with Quanteda</h2>
+						<p class="fragment">The dictionary() function in R can also be used to import dictionaries saved in the following formats: </p>
+						<ul>
+							<li class="fragment">Wordstat files </li>
+							<li class="fragment">LIWC files </li>
+							<li class="fragment">Yoshikoder files </li>
+							<li class="fragment">Lexicoder files </li>
+							<li class="fragment">YAML files </li>
+						</ul>
+					</section>
+					<section>
+						<h2>Validate dictionary </h2>
+						<p class="fragment">Three key issues we want to be aware of: </p>
+						<ul>
+							<li class="fragment">Validity: Does the categories actually makes sense and represent well the concept we are interested in? </li>
+							<li class="fragment">Recall: Does the dictionary capture all the content related to concept? </li>
+							<li class="fragment">Precision: Does the dictionary only capture the content related to concept? </li>
+						</ul>
+						<p class="fragment">So recall and precision could be measured as: </p>
+						<ul>
+							<li class="fragment">Recall: Proportion of all mentions of concept that is actually captured by our dictionary. </li>
+							<li class="fragment">Precision: Proportion of all the content captured by the dictionary which actually relates to concept of interest. </li>
+						</ul>
+					</section>
+					<section>
+						<h2>Approach to build a good dictionary: </h2>
+						<ol>
+							<li class="fragment">Identify "extreme texts" with known positions. </li>
+							<li class="fragment">Use word frequencies from each group to identify words that occur often in one group, but rarely in the other. </li>
+							<li class="fragment">Check these keywords in context to measure precision (possibly just take a random sample)</li>
+							<li class="fragment">Consider need to stem keywords. </li>
+						</ol>
+					</section>
+					<section>
+						
+					</section>
+				</section>
+
+
+
+
+
+
+
+				<section>
+					<h3 style="color: rgb(0,101,189)">Dictionary analysis in Quanteda </h3>
+					<section>
+						<h2>A dictionary object in Quanteda </h2>
+						<pre><code class ="r hljs fragment" data-trim data-noescape>
+> dict <- dictionary(list(christmas = c("Christmas", "Santa", "holiday"),
++                           opposition = c("Opposition", "reject", "notincorpus"),
++                           tax = "tax*",
++                           country = c("United_States", "Sweden")))
+<span class="fragment">> dict
+Dictionary object with 4 key entries.
+- [christmas]:
+  - christmas, santa, holiday
+- [opposition]:
+  - opposition, reject, notincorpus
+- [tax]:
+  - tax*
+- [country]:
+  - united_states, sweden </span>
+						</code></pre>
+					</section>
+					<section>
+						<p>An example corpus: </p>
+						<pre><code class ="r hljs fragment" data-trim data-noescape>
+> corp <- corpus(c("My Christmas was ruined by your opposition tax plan.",
++                "Does the United_States or Sweden have more progressive taxation?"))
+						</code></pre>
+					</section>
+					<section>
+						<h2>Looking up dictionary terms on tokens object: </h2>
+						<pre><code class ="r hljs fragment" data-trim data-noescape>
+> tok <- tokens(corp, remove_punct = TRUE)
+<span class="fragment">> tok
+tokens from 2 documents.
+text1 :
+[1] "My"         "Christmas"  "was"        "ruined"     "by"         "your"       "opposition" "tax"        "plan"      
+
+text2 :
+[1] "Does"          "the"           "United_States" "or"            "Sweden"        "have"          "more"          "progressive"   "taxation"     
+</span>
+<span class="fragment">> tokLu <- tokens_lookup(tok, dict)</span>
+<span class="fragment">> tokLu
+tokens from 2 documents.
+text1 :
+[1] "christmas"  "opposition" "tax"       
+
+text2 :
+[1] "country" "country" "tax"    
+</span>
+<span class="fragment">> dfm(tokLu)
+Document-feature matrix of: 2 documents, 4 features (37.5% sparse).
+2 x 4 sparse Matrix of class "dfm"
+       features
+docs    christmas opposition tax country
+  text1         1          1   1       0
+  text2         0          0   1       2</span>
+						</code></pre>
+					</section>
+					<section>
+						<h2>Looking up dictionary terms on a document-feature-matrix:</h2>
+						<pre><code class ="r hljs fragment" data-trim data-noescape>
+> dfmat <- dfm(corp, remove = stopwords("english"))
+<span class="fragment">> dfmat
+Document-feature matrix of: 2 documents, 11 features (50.0% sparse).
+2 x 11 sparse Matrix of class "dfm"
+       features
+docs    christmas ruined opposition tax plan . united_states sweden progressive taxation ?
+  text1         1      1          1   1    1 1             0      0           0        0 0
+  text2         0      0          0   0    0 0             1      1           1        1 1</span>
+<span class="fragment">> dfm_lookup(dfmat, dict)
+Document-feature matrix of: 2 documents, 4 features (37.5% sparse).
+2 x 4 sparse Matrix of class "dfm"
+       features
+docs    christmas opposition tax country
+  text1         1          1   1       0
+  text2         0          0   1       2</span>
+						</code></pre>
+					</section>
+					
+				</section>
+				
+				
+				<section>
+					<h3 style="color: rgb(0,101,189)">Sparsity and density </h3>
+					<section>
+						<h3 class="fragment" data-fragment-index="1">Sparse and dense matrices: </h3>
+						<ul class="fragment" data-fragment-index="1">
+							<li>Sparse matrix: Most elements equal zero. </li>
+							<li>Dense matrix: Most elements have non-zero values. </li>
+						</ul>
+						<p></p>
+						<h3 class="fragment" data-fragment-index="2">Sparsity and density: </h3>
+						<ul>
+							<li class="fragment">Sparsity of a matrix: The proportion of cells that equals zero. </li>
+							<li class="fragment">Density of a matrix: The proportion of cells that does not equal zero. </li>
+						</ul>
+						<p class="fragment">So a sparse matrix has a sparsity above 0.5, which is the same as a density below 0,5. </p>
+					</section>
+					<section>
+						<img src="pic/lecture6/Document-Term-Matrix-with-Title-1.png" width="100%" />
+						<ul class="fragment">
+							<li>Total cells: 30 </li>
+							<li>Cells with zeroes: 17 </li>
+							<li>Cells with numbers: 13 </li>
+						</ul>
+						<p class="fragment">Sparcity = 17 / 30 = 0,57</p>
+						<p class="fragment">Density = 13 / 30 = 0,43</p>
+						<p class="fragment">So this is a sparce document-feature-matrix. </p>
+					</section>
+					<section>
+						<h3>Sparsity/density of a document-feature-dataframe </h3>
+						<p class="fragment">The density of a document-feature-matrix can be interpreted as the proportion of text documents from the corpus in which each feature/token on average occur. </p>
+						<p class="fragment">So in a document-feature-matrix with a sparsity of 82%, each feature/token on average occur in 18% of the text documents. </p>
+						<p class="fragment">Or it can also be interpreted as the proportion of all the features/tokens in the corpus that occure in each text document. </p>
+						<p class="fragment">So in a document-feature-matrix with a sparsity of 82%, on average 18% of all the features/tokens in the whole corpus are used in each text document. </p>
+						<h3 class="fragment">The sparsity/density indicates to what extent documents in a corpus tends to be made up of the same tokens. </h3>
+						<p class="fragment">But by their nature most document-feature-matrices will be sparse. <p>
+					</section>
+				</section>
+				
+				
+
+				<section>
+					<h1>Thanks and see you tomorrow!</h1>
+				</section>
+
+				
+				
+			</div>
+		</div>
+		
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+			});
+		</script>
+	</body>
+</html>
