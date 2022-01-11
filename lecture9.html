@@ -469,6 +469,36 @@
 							</tbody>
 						</table>
 					</section>
+					<section>
+						<h3>Size of differences in word use</h3>
+						<pre><code class ="r hljs fragment" data-trim data-noescape>
+> TrumpKeyn$prop_target <- TrumpKeyn$n_target / sum(TrumpKeyn$n_target) * 100
+> TrumpKeyn$prop_target <- TrumpKeyn$n_target / sum(TrumpKeyn$n_target) * 100
+> TrumpKeyn$prop_reference <- TrumpKeyn$n_reference / sum(TrumpKeyn$n_reference) * 100
+> head(TrumpKeyn)
+       feature     chi2 p n_target n_reference prop_target prop_reference
+1        obama 195.5573 0        3           0   0.2076125      0.0000000
+2        we've 195.5573 0        3           0   0.2076125      0.0000000
+3      america 112.8998 0       18         184   1.2456747      0.1350826
+4  politicians 105.3010 0        2           0   0.1384083      0.0000000
+5        stops 105.3010 0        2           0   0.1384083      0.0000000
+6 transferring 105.3010 0        2           0   0.1384083      0.0000000
+						</code></pre>
+					</section>
+					<section>
+						<h3>Size of differences in word use</h3>
+						<pre><code class ="r hljs fragment" data-trim data-noescape>
+> TrumpKeyn$rel_diff <- TrumpKeyn$prop_target / TrumpKeyn$prop_reference
+> head(TrumpKeyn)
+       feature     chi2 p n_target n_reference prop_target prop_reference rel_diff
+1        obama 195.5573 0        3           0   0.2076125      0.0000000      Inf
+2        we've 195.5573 0        3           0   0.2076125      0.0000000      Inf
+3      america 112.8998 0       18         184   1.2456747      0.1350826 9.221581
+4  politicians 105.3010 0        2           0   0.1384083      0.0000000      Inf
+5        stops 105.3010 0        2           0   0.1384083      0.0000000      Inf
+6 transferring 105.3010 0        2           0   0.1384083      0.0000000      Inf
+						</code></pre>
+					</section>
 				</section>
 				
 
