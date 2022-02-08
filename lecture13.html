@@ -176,7 +176,7 @@
 inaugDfmPostWWII <- dfm_subset(inaugDfm, "Year" >= 1945)
 						</code></pre>
 						<p class="fragment">Never use double quotes when referring to a variable name in dfm_subset()! </br> (or the normal subset() function for that matter) </p>
-						<p class="fragment">Be particular aware of this, since it will not through an error and might look like it works!</p>
+						<p class="fragment">Be particular aware of this, since it will not return an error and might look like it works!</p>
 						<p class="fragment">The correct subsetting should look like this: </p>
 						<pre><code class ="r hljs fragment" data-trim data-noescape>
 inaugDfmPostWWII <- dfm_subset(inaugDfm, Year >= 1945)
